@@ -8,12 +8,13 @@ package http
 
 import (
 	"bytes"
-	"crypto/tls"
 	"errors"
 	"io"
 	"net"
 	"strings"
 	"testing"
+
+	tls "github.com/refraction-networking/utls"
 
 	"github.com/robin-samuel/fhttp/internal/testcert"
 )

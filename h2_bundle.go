@@ -24,7 +24,7 @@ import (
 	"compress/gzip"
 	"context"
 	"crypto/rand"
-	"crypto/tls"
+	tls "github.com/refraction-networking/utls"
 	"encoding/binary"
 	"errors"
 	"fmt"

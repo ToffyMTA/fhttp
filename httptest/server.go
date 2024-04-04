@@ -7,7 +7,6 @@
 package httptest
 
 import (
-	"crypto/tls"
 	"crypto/x509"
 	"flag"
 	"fmt"
@@ -17,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	tls "github.com/refraction-networking/utls"
 
 	http "github.com/robin-samuel/fhttp"
 	"github.com/robin-samuel/fhttp/internal/testcert"

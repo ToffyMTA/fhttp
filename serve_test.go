@@ -12,7 +12,6 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -34,6 +33,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	tls "github.com/refraction-networking/utls"
 
 	"github.com/robin-samuel/fhttp/internal/testenv"
 

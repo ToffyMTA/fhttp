@@ -23,7 +23,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -34,6 +33,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	tls "github.com/refraction-networking/utls"
 
 	http "github.com/robin-samuel/fhttp"
 	"github.com/robin-samuel/fhttp/http2"

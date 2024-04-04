@@ -8,9 +8,10 @@ package http2
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"sync"
+
+	tls "github.com/refraction-networking/utls"
 
 	http "github.com/robin-samuel/fhttp"
 )

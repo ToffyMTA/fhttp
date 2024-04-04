@@ -17,7 +17,6 @@ package http2 // import "github.com/robin-samuel/fhttp/http2"
 
 import (
 	"bufio"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"os"
@@ -25,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	tls "github.com/refraction-networking/utls"
 
 	http "github.com/robin-samuel/fhttp"
 

@@ -8,11 +8,12 @@ package httptrace
 
 import (
 	"context"
-	"crypto/tls"
 	"net"
 	"net/textproto"
 	"reflect"
 	"time"
+
+	tls "github.com/refraction-networking/utls"
 
 	"github.com/robin-samuel/fhttp/internal/nettrace"
 )
