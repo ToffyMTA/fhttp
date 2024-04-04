@@ -2569,7 +2569,7 @@ func (e *httpError) Error() string   { return e.err }
 func (e *httpError) Timeout() bool   { return e.timeout }
 func (e *httpError) Temporary() bool { return true }
 
-var errTimeout error = &httpError{err: "github.com/robin-samuel/fhttp: timeout awaiting response headers", timeout: true}
+var errTimeout error = &httpError{err: "net/http: timeout awaiting response headers", timeout: true}
 
 // errRequestCanceled is set to be identical to the one from h2 to facilitate
 // testing.
@@ -2910,7 +2910,7 @@ type tlsHandshakeTimeoutError struct{}
 func (tlsHandshakeTimeoutError) Timeout() bool   { return true }
 func (tlsHandshakeTimeoutError) Temporary() bool { return true }
 func (tlsHandshakeTimeoutError) Error() string {
-	return "github.com/robin-samuel/fhttp: TLS handshake timeout"
+	return "net/http: TLS handshake timeout"
 }
 
 // fakeLocker is a sync.Locker which does nothing. It's used to guard
