@@ -8961,54 +8961,101 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 		// target URI (the path-absolute production and optionally a '?' character
 		// followed by the query production, see Sections 3.3 and 3.4 of
 		// [RFC3986]).
-		f(":authority", host)
+
 		m := req.Method
 		if m == "" {
 			m = MethodGet
 		}
-		f(":method", m)
-		if req.Method != "CONNECT" {
-			f(":path", path)
-			f(":scheme", req.URL.Scheme)
+		
+		if cc.t.t1.PseudoHeaderOrder != nil {
+			for _, name := range cc.t.t1.PseudoHeaderOrder {
+				switch name {
+				case ":authority":
+					f(":authority", host)
+				case ":method":
+					f(":method", m)
+				case ":path":
+					if req.Method != "CONNECT" {
+						f(":path", path)
+					}
+				case ":scheme":
+					if req.Method != "CONNECT" {
+						f(":scheme", req.URL.Scheme)
+					}
+				default:
+					continue
+				}
+			}
+		} else {
+			f(":authority", host)
+			f(":method", m)
+			if req.Method != "CONNECT" {
+				f(":path", path)
+				f(":scheme", req.URL.Scheme)
+			}
 		}
 		if trailers != "" {
 			f("trailer", trailers)
 		}
 
+		// Should clone, because this function is called twice; to read and to write.
+		// If headers are added to the req, then headers would be added twice.
+		hdrs := req.Header.Clone()
+		if _, ok := req.Header["content-length"]; !ok && http2shouldSendReqContentLength(req.Method, contentLength) {
+			hdrs["content-length"] = []string{strconv.FormatInt(contentLength, 10)}
+		}
+
+		// Does not include accept-encoding header if its defined in req.Header
+		if _, ok := hdrs["accept-encoding"]; !ok && addGzipHeader {
+			hdrs["accept-encoding"] = []string{"gzip, deflate, br"}
+		}
+
 		var didUA bool
-		for k, vv := range req.Header {
-			if http2asciiEqualFold(k, "host") || http2asciiEqualFold(k, "content-length") {
+		var kvs []HeaderKeyValues
+
+		if headerOrder, ok := hdrs[HeaderOrderKey]; ok {
+			order := make(map[string]int)
+			for i, v := range headerOrder {
+				order[v] = i
+			}
+			kvs, _ = hdrs.SortedKeyValuesBy(order, make(map[string]bool))
+		} else {
+			kvs, _ = hdrs.SortedKeyValues(make(map[string]bool))
+		}
+
+		for _, kv := range kvs {
+			if http2asciiEqualFold(kv.Key, "host") || http2asciiEqualFold(kv.Key, "content-length") {
 				// Host is :authority, already sent.
 				// Content-Length is automatic, set below.
 				continue
-			} else if http2asciiEqualFold(k, "connection") ||
-				http2asciiEqualFold(k, "proxy-connection") ||
-				http2asciiEqualFold(k, "transfer-encoding") ||
-				http2asciiEqualFold(k, "upgrade") ||
-				http2asciiEqualFold(k, "keep-alive") {
+			} else if http2asciiEqualFold(kv.Key, "connection") ||
+				http2asciiEqualFold(kv.Key, "proxy-connection") ||
+				http2asciiEqualFold(kv.Key, "transfer-encoding") ||
+				http2asciiEqualFold(kv.Key, "upgrade") ||
+				http2asciiEqualFold(kv.Key, "keep-alive") {
 				// Per 8.1.2.2 Connection-Specific Header
 				// Fields, don't send connection-specific
 				// fields. We have already checked if any
 				// are error-worthy so just ignore the rest.
 				continue
-			} else if http2asciiEqualFold(k, "user-agent") {
+			} else if http2asciiEqualFold(kv.Key, "user-agent") {
 				// Match Go's http1 behavior: at most one
 				// User-Agent. If set to nil or empty string,
 				// then omit it. Otherwise if not mentioned,
 				// include the default (below).
 				didUA = true
-				if len(vv) < 1 {
+				if len(kv.Values) < 1 {
 					continue
 				}
-				vv = vv[:1]
-				if vv[0] == "" {
+				kv.Values = kv.Values[:1]
+				if kv.Values[0] == "" {
 					continue
 				}
-			} else if http2asciiEqualFold(k, "cookie") {
+			} else if http2asciiEqualFold(kv.Key, "cookie") {
 				// Per 8.1.2.5 To allow for better compression efficiency, the
 				// Cookie header field MAY be split into separate header fields,
 				// each with one or more cookie-pairs.
-				for _, v := range vv {
+				for _, v := range kv.Values {
 					for {
 						p := strings.IndexByte(v, ';')
 						if p < 0 {
@@ -9029,8 +9076,8 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 				continue
 			}
 
-			for _, v := range vv {
-				f(k, v)
+			for _, v := range kv.Values {
+				f(kv.Key, v)
 			}
 		}
 		if http2shouldSendReqContentLength(req.Method, contentLength) {
