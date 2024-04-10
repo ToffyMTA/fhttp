@@ -9022,7 +9022,7 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 		if headerOrder, ok := hdrs[HeaderOrderKey]; ok {
 			order := make(map[string]int)
 			for i, v := range headerOrder {
-				order[v] = i
+				order[CanonicalHeaderKey(v)] = i
 			}
 			kvs, _ = hdrs.SortedKeyValuesBy(order, make(map[string]bool))
 		} else {
