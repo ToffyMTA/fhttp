@@ -3316,7 +3316,9 @@ func TestTransportMaxFrameReadSize(t *testing.T) {
 		want:             minMaxFrameSize,
 	}} {
 		tc := newTestClientConn(t, func(tr *Transport) {
-			tr.MaxReadFrameSize = test.maxReadFrameSize
+			tr.Settings = []Setting{
+				{SettingMaxFrameSize, test.maxReadFrameSize},
+			}
 		})
 
 		fr := testClientConnReadFrame[*SettingsFrame](tc)
@@ -3459,7 +3461,9 @@ func TestTransportRequestsStallAtServerLimit(t *testing.T) {
 func TestTransportMaxDecoderHeaderTableSize(t *testing.T) {
 	var reqSize, resSize uint32 = 8192, 16384
 	tc := newTestClientConn(t, func(tr *Transport) {
-		tr.MaxDecoderHeaderTableSize = reqSize
+		tr.Settings = []Setting{
+			{SettingHeaderTableSize, reqSize},
+		}
 	})
 
 	fr := testClientConnReadFrame[*SettingsFrame](tc)
@@ -3478,12 +3482,14 @@ func TestTransportMaxDecoderHeaderTableSize(t *testing.T) {
 func TestTransportMaxEncoderHeaderTableSize(t *testing.T) {
 	var peerAdvertisedMaxHeaderTableSize uint32 = 16384
 	tc := newTestClientConn(t, func(tr *Transport) {
-		tr.MaxEncoderHeaderTableSize = 8192
+		tr.Settings = []Setting{
+			{SettingHeaderTableSize, 8192},
+		}
 	})
 	tc.greet(Setting{SettingHeaderTableSize, peerAdvertisedMaxHeaderTableSize})
 
-	if got, want := tc.cc.henc.MaxDynamicTableSize(), tc.tr.MaxEncoderHeaderTableSize; got != want {
-		t.Fatalf("henc.MaxDynamicTableSize() = %d, want %d", got, want)
+	if got := tc.cc.henc.MaxDynamicTableSize(); got != 8192 {
+		t.Fatalf("henc.MaxDynamicTableSize() = %d, want %d", got, 8192)
 	}
 }
 
@@ -3720,7 +3726,7 @@ func benchLargeDownloadRoundTrip(b *testing.B, frameSize uint32) {
 	)
 	defer st.Close()
 
-	tr := &Transport{TLSClientConfig: tlsConfigInsecure, MaxReadFrameSize: frameSize}
+	tr := &Transport{TLSClientConfig: tlsConfigInsecure, Settings: []Setting{{SettingMaxFrameSize, frameSize}}}
 	defer tr.CloseIdleConnections()
 
 	req, err := http.NewRequest("GET", st.ts.URL, nil)

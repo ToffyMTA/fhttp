@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/textproto"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -68,6 +69,18 @@ const (
 // A Transport internally caches connections to servers. It is safe
 // for concurrent use by multiple goroutines.
 type Transport struct {
+	// ConnectionFlow is how many connection-level flow control tokens
+	// we give the server at start-up, past the default 64k.
+	ConnectionFlow uint32
+
+	// Settings is the HTTP/2 SETTINGS values to send in the initial
+	// settings frame. If nil, sensible defaults are used.
+	Settings []Setting
+
+	// Priorities is the HTTP/2 PRIORITY values to send in the initial
+	// settings frame.
+	Priorities []Priority
+
 	// DialTLSContext specifies an optional dial function with context for
 	// creating TLS connections for requests.
 	//
@@ -108,37 +121,6 @@ type Transport struct {
 	// AllowHTTP, if true, permits HTTP/2 requests using the insecure,
 	// plain-text "http" scheme. Note that this does not enable h2c support.
 	AllowHTTP bool
-
-	// MaxHeaderListSize is the http2 SETTINGS_MAX_HEADER_LIST_SIZE to
-	// send in the initial settings frame. It is how many bytes
-	// of response headers are allowed. Unlike the http2 spec, zero here
-	// means to use a default limit (currently 10MB). If you actually
-	// want to advertise an unlimited value to the peer, Transport
-	// interprets the highest possible value here (0xffffffff or 1<<32-1)
-	// to mean no limit.
-	MaxHeaderListSize uint32
-
-	// MaxReadFrameSize is the http2 SETTINGS_MAX_FRAME_SIZE to send in the
-	// initial settings frame. It is the size in bytes of the largest frame
-	// payload that the sender is willing to receive. If 0, no setting is
-	// sent, and the value is provided by the peer, which should be 16384
-	// according to the spec:
-	// https://datatracker.ietf.org/doc/html/rfc7540#section-6.5.2.
-	// Values are bounded in the range 16k to 16M.
-	MaxReadFrameSize uint32
-
-	// MaxDecoderHeaderTableSize optionally specifies the http2
-	// SETTINGS_HEADER_TABLE_SIZE to send in the initial settings frame. It
-	// informs the remote endpoint of the maximum size of the header compression
-	// table used to decode header blocks, in octets. If zero, the default value
-	// of 4096 is used.
-	MaxDecoderHeaderTableSize uint32
-
-	// MaxEncoderHeaderTableSize optionally specifies an upper limit for the
-	// header compression table used for encoding request headers. Received
-	// SETTINGS_HEADER_TABLE_SIZE settings are capped at this limit. If zero,
-	// the default value of 4096 is used.
-	MaxEncoderHeaderTableSize uint32
 
 	// StrictMaxConcurrentStreams controls whether the server's
 	// SETTINGS_MAX_CONCURRENT_STREAMS should be respected
@@ -191,27 +173,46 @@ type Transport struct {
 	syncHooks *testSyncHooks
 }
 
+type Priority struct {
+	PriorityParam PriorityParam
+	StreamID      uint32
+}
+
 func (t *Transport) maxHeaderListSize() uint32 {
-	if t.MaxHeaderListSize == 0 {
-		return 10 << 20
-	}
-	if t.MaxHeaderListSize == 0xffffffff {
+	maxHeaderListSizeIdx := slices.IndexFunc(t.Settings, func(s Setting) bool {
+		return s.ID == SettingMaxHeaderListSize
+	})
+	if maxHeaderListSizeIdx == -1 {
 		return 0
 	}
-	return t.MaxHeaderListSize
+	maxHeaderListSize := t.Settings[maxHeaderListSizeIdx].Val
+	if maxHeaderListSize == 0 {
+		return 10 << 20
+	}
+	if maxHeaderListSize == 0xffffffff {
+		return 0
+	}
+	return maxHeaderListSize
 }
 
 func (t *Transport) maxFrameReadSize() uint32 {
-	if t.MaxReadFrameSize == 0 {
+	maxReadFrameSizeIdx := slices.IndexFunc(t.Settings, func(s Setting) bool {
+		return s.ID == SettingMaxFrameSize
+	})
+	if maxReadFrameSizeIdx == -1 {
+		return 0
+	}
+	maxReadFrameSize := t.Settings[maxReadFrameSizeIdx].Val
+	if maxReadFrameSize == 0 {
 		return 0 // use the default provided by the peer
 	}
-	if t.MaxReadFrameSize < minMaxFrameSize {
+	if maxReadFrameSize < minMaxFrameSize {
 		return minMaxFrameSize
 	}
-	if t.MaxReadFrameSize > maxFrameSize {
+	if maxReadFrameSize > maxFrameSize {
 		return maxFrameSize
 	}
-	return t.MaxReadFrameSize
+	return maxReadFrameSize
 }
 
 func (t *Transport) disableCompression() bool {
@@ -791,14 +792,28 @@ func (t *Transport) expectContinueTimeout() time.Duration {
 }
 
 func (t *Transport) maxDecoderHeaderTableSize() uint32 {
-	if v := t.MaxDecoderHeaderTableSize; v > 0 {
+	maxHeaderTableSizeIdx := slices.IndexFunc(t.Settings, func(s Setting) bool {
+		return s.ID == SettingHeaderTableSize
+	})
+	if maxHeaderTableSizeIdx == -1 {
+		return initialHeaderTableSize
+	}
+	maxHeaderTableSize := t.Settings[maxHeaderTableSizeIdx].Val
+	if v := maxHeaderTableSize; v > 0 {
 		return v
 	}
 	return initialHeaderTableSize
 }
 
 func (t *Transport) maxEncoderHeaderTableSize() uint32 {
-	if v := t.MaxEncoderHeaderTableSize; v > 0 {
+	maxHeaderTableSizeIdx := slices.IndexFunc(t.Settings, func(s Setting) bool {
+		return s.ID == SettingHeaderTableSize
+	})
+	if maxHeaderTableSizeIdx == -1 {
+		return initialHeaderTableSize
+	}
+	maxHeaderTableSize := t.Settings[maxHeaderTableSizeIdx].Val
+	if v := maxHeaderTableSize; v > 0 {
 		return v
 	}
 	return initialHeaderTableSize
@@ -872,24 +887,41 @@ func (t *Transport) newClientConn(c net.Conn, singleUse bool, hooks *testSyncHoo
 		cc.tlsState = &state
 	}
 
-	initialSettings := []Setting{
-		{ID: SettingEnablePush, Val: 0},
-		{ID: SettingInitialWindowSize, Val: transportDefaultStreamFlow},
-	}
-	if max := t.maxFrameReadSize(); max != 0 {
-		initialSettings = append(initialSettings, Setting{ID: SettingMaxFrameSize, Val: max})
-	}
-	if max := t.maxHeaderListSize(); max != 0 {
-		initialSettings = append(initialSettings, Setting{ID: SettingMaxHeaderListSize, Val: max})
-	}
-	if maxHeaderTableSize != initialHeaderTableSize {
-		initialSettings = append(initialSettings, Setting{ID: SettingHeaderTableSize, Val: maxHeaderTableSize})
+	var initialSettings []Setting
+	if t.Settings != nil {
+		initialSettings = t.Settings
+	} else {
+		initialSettings = []Setting{
+			{ID: SettingEnablePush, Val: 0},
+			{ID: SettingInitialWindowSize, Val: transportDefaultStreamFlow},
+		}
+		if max := t.maxFrameReadSize(); max != 0 {
+			initialSettings = append(initialSettings, Setting{ID: SettingMaxFrameSize, Val: max})
+		}
+		if max := t.maxHeaderListSize(); max != 0 {
+			initialSettings = append(initialSettings, Setting{ID: SettingMaxHeaderListSize, Val: max})
+		}
+		if maxHeaderTableSize != initialHeaderTableSize {
+			initialSettings = append(initialSettings, Setting{ID: SettingHeaderTableSize, Val: maxHeaderTableSize})
+		}
 	}
 
 	cc.bw.Write(clientPreface)
 	cc.fr.WriteSettings(initialSettings...)
-	cc.fr.WriteWindowUpdate(0, transportDefaultConnFlow)
-	cc.inflow.init(transportDefaultConnFlow + initialWindowSize)
+
+	if t.ConnectionFlow != 0 {
+		cc.fr.WriteWindowUpdate(0, t.ConnectionFlow)
+		cc.inflow.init(int32(t.ConnectionFlow) + initialWindowSize)
+	} else {
+		cc.fr.WriteWindowUpdate(0, transportDefaultConnFlow)
+		cc.inflow.init(transportDefaultConnFlow + initialWindowSize)
+	}
+
+	for _, priority := range t.Priorities {
+		cc.fr.WritePriority(priority.StreamID, priority.PriorityParam)
+		cc.nextStreamID = priority.StreamID + 2
+	}
+
 	cc.bw.Flush()
 	if cc.werr != nil {
 		cc.Close()
