@@ -81,6 +81,10 @@ type Transport struct {
 	// settings frame.
 	Priorities []Priority
 
+	// PseudoHeaderOrder specifies the order in which pseudo-header fields
+	// should be included in requests.
+	PseudoHeaderOrder []string
+
 	// DialTLSContext specifies an optional dial function with context for
 	// creating TLS connections for requests.
 	//
@@ -2123,15 +2127,38 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 		// target URI (the path-absolute production and optionally a '?' character
 		// followed by the query production, see Sections 3.3 and 3.4 of
 		// [RFC3986]).
-		f(":authority", host)
+
 		m := req.Method
 		if m == "" {
 			m = http.MethodGet
 		}
-		f(":method", m)
-		if req.Method != "CONNECT" {
-			f(":path", path)
-			f(":scheme", req.URL.Scheme)
+
+		if cc.t.PseudoHeaderOrder != nil {
+			for _, name := range cc.t.PseudoHeaderOrder {
+				switch name {
+				case ":authority":
+					f(":authority", host)
+				case ":method":
+					f(":method", m)
+				case ":path":
+					if req.Method != "CONNECT" {
+						f(":path", path)
+					}
+				case ":scheme":
+					if req.Method != "CONNECT" {
+						f(":scheme", req.URL.Scheme)
+					}
+				default:
+					continue
+				}
+			}
+		} else {
+			f(":authority", host)
+			f(":method", m)
+			if req.Method != "CONNECT" {
+				f(":path", path)
+				f(":scheme", req.URL.Scheme)
+			}
 		}
 		if trailers != "" {
 			f("trailer", trailers)
