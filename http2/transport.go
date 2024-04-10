@@ -2075,6 +2075,11 @@ func (cs *clientStream) awaitFlowControl(maxBytes int) (taken int32, err error) 
 func validateHeaders(hdrs http.Header) string {
 	for k, vv := range hdrs {
 		if !httpguts.ValidHeaderFieldName(k) {
+			// If the header is magic key, the headers would have been ordered
+			// by this step. It is ok to delete and not raise an error
+			if k == http.HeaderOrderKey {
+				continue
+			}
 			return fmt.Sprintf("name %q", k)
 		}
 		for _, v := range vv {
@@ -2284,6 +2289,10 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 
 	// Header list size is ok. Write the headers.
 	enumerateHeaders(func(name, value string) {
+		// skips over writing magic key headers
+		if name == http.HeaderOrderKey {
+			return
+		}
 		name, ascii := lowerHeader(name)
 		if !ascii {
 			// Skip writing invalid headers. Per RFC 7540, Section 8.1.2, header
