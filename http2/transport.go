@@ -81,6 +81,10 @@ type Transport struct {
 	// settings frame.
 	Priorities []Priority
 
+	// HeaderPriority is the HTTP/2 PRIORITY sent in the HEADERS frame.
+	// If nil, sensible defaults are used.
+	HeaderPriority *PriorityParam
+
 	// PseudoHeaderOrder specifies the order in which pseudo-header fields
 	// should be included in requests.
 	PseudoHeaderOrder []string
@@ -1813,11 +1817,21 @@ func (cc *ClientConn) writeHeaders(streamID uint32, endStream bool, maxFrameSize
 		hdrs = hdrs[len(chunk):]
 		endHeaders := len(hdrs) == 0
 		if first {
+			defaultHeaderPriorityParam := PriorityParam{
+				Exclusive: true,
+				Weight:    255,
+				StreamDep: 0,
+			}
+
+			if cc.t.HeaderPriority != nil {
+				defaultHeaderPriorityParam = *cc.t.HeaderPriority
+			}
 			cc.fr.WriteHeaders(HeadersFrameParam{
 				StreamID:      streamID,
 				BlockFragment: chunk,
 				EndStream:     endStream,
 				EndHeaders:    endHeaders,
+				Priority:      defaultHeaderPriorityParam,
 			})
 			first = false
 		} else {
