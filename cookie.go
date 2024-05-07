@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/robin-samuel/fhttp/internal/ascii"
+	"github.com/sparkaio/fhttp/internal/ascii"
 )
 
 // A Cookie represents an HTTP cookie as sent in the Set-Cookie header of an

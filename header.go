@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/robin-samuel/fhttp/httptrace"
-	"github.com/robin-samuel/fhttp/internal/ascii"
+	"github.com/sparkaio/fhttp/httptrace"
+	"github.com/sparkaio/fhttp/internal/ascii"
 
 	"golang.org/x/net/http/httpguts"
 )

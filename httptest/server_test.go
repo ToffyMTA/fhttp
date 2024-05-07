@@ -11,7 +11,7 @@ import (
 	"sync"
 	"testing"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 )
 
 type newServerFunc func(http.Handler) *Server

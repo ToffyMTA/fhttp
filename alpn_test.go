@@ -15,8 +15,8 @@ import (
 
 	tls "github.com/refraction-networking/utls"
 
-	. "github.com/robin-samuel/fhttp"
-	"github.com/robin-samuel/fhttp/httptest"
+	. "github.com/sparkaio/fhttp"
+	"github.com/sparkaio/fhttp/httptest"
 )
 
 func TestNextProtoUpgrade(t *testing.T) {

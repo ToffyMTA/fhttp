@@ -39,13 +39,13 @@ import (
 
 	tls "github.com/refraction-networking/utls"
 
-	"github.com/robin-samuel/fhttp/internal/nettrace"
+	"github.com/sparkaio/fhttp/internal/nettrace"
 
-	. "github.com/robin-samuel/fhttp"
-	"github.com/robin-samuel/fhttp/httptest"
-	"github.com/robin-samuel/fhttp/httptrace"
-	"github.com/robin-samuel/fhttp/httputil"
-	"github.com/robin-samuel/fhttp/internal/testcert"
+	. "github.com/sparkaio/fhttp"
+	"github.com/sparkaio/fhttp/httptest"
+	"github.com/sparkaio/fhttp/httptrace"
+	"github.com/sparkaio/fhttp/httputil"
+	"github.com/sparkaio/fhttp/internal/testcert"
 
 	"golang.org/x/net/http/httpguts"
 )

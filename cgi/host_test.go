@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 
-	"github.com/robin-samuel/fhttp/internal/testenv"
+	"github.com/sparkaio/fhttp/internal/testenv"
 
-	"github.com/robin-samuel/fhttp/httptest"
+	"github.com/sparkaio/fhttp/httptest"
 )
 
 // TestMain executes the test binary as the cgi server if

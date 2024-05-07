@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"log"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 
-	"github.com/robin-samuel/fhttp/httptrace"
+	"github.com/sparkaio/fhttp/httptrace"
 )
 
 func Example() {

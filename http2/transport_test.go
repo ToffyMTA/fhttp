@@ -34,12 +34,12 @@ import (
 
 	tls "github.com/refraction-networking/utls"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 
-	"github.com/robin-samuel/fhttp/httptest"
-	"github.com/robin-samuel/fhttp/httptrace"
+	"github.com/sparkaio/fhttp/httptest"
+	"github.com/sparkaio/fhttp/httptrace"
 
-	"github.com/robin-samuel/fhttp/http2/hpack"
+	"github.com/sparkaio/fhttp/http2/hpack"
 )
 
 var (

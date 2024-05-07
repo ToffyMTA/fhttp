@@ -1,4 +1,4 @@
-module github.com/robin-samuel/fhttp
+module github.com/sparkaio/fhttp
 
 go 1.22.0
 

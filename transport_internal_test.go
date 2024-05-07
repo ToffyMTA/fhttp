@@ -16,7 +16,7 @@ import (
 
 	tls "github.com/refraction-networking/utls"
 
-	"github.com/robin-samuel/fhttp/internal/testcert"
+	"github.com/sparkaio/fhttp/internal/testcert"
 )
 
 // Issue 15446: incorrect wrapping of errors when server closes an idle connection.

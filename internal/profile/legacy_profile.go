@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/robin-samuel/fhttp/internal/lazyregexp"
+	"github.com/sparkaio/fhttp/internal/lazyregexp"
 )
 
 var (

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/robin-samuel/fhttp"
+	. "github.com/sparkaio/fhttp"
 )
 
 func TestResponseControllerFlush(t *testing.T) { run(t, testResponseControllerFlush) }

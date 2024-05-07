@@ -24,8 +24,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/robin-samuel/fhttp/internal/cfg"
-	"github.com/robin-samuel/fhttp/internal/platform"
+	"github.com/sparkaio/fhttp/internal/cfg"
+	"github.com/sparkaio/fhttp/internal/platform"
 )
 
 // Save the original environment during init for use in checks. A test

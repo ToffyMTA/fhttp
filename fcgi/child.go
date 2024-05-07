@@ -16,9 +16,9 @@ import (
 	"strings"
 	"time"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 
-	"github.com/robin-samuel/fhttp/cgi"
+	"github.com/sparkaio/fhttp/cgi"
 )
 
 // request holds the state for an in-progress request. As soon as it's complete,

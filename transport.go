@@ -29,10 +29,10 @@ import (
 
 	tls "github.com/refraction-networking/utls"
 
-	"github.com/robin-samuel/fhttp/internal/godebug"
+	"github.com/sparkaio/fhttp/internal/godebug"
 
-	"github.com/robin-samuel/fhttp/httptrace"
-	"github.com/robin-samuel/fhttp/internal/ascii"
+	"github.com/sparkaio/fhttp/httptrace"
+	"github.com/sparkaio/fhttp/internal/ascii"
 
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http/httpproxy"

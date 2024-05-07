@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/robin-samuel/fhttp/internal/platform"
-	"github.com/robin-samuel/fhttp/internal/testenv"
+	"github.com/sparkaio/fhttp/internal/platform"
+	"github.com/sparkaio/fhttp/internal/testenv"
 )
 
 func TestGoToolLocation(t *testing.T) {

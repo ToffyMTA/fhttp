@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 
-	"github.com/robin-samuel/fhttp/http2/hpack"
+	"github.com/sparkaio/fhttp/http2/hpack"
 )
 
 // TestTestClientConn demonstrates usage of testClientConn.

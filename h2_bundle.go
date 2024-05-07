@@ -35,7 +35,7 @@ import (
 	"math/bits"
 	mathrand "math/rand"
 	"net"
-	"github.com/robin-samuel/fhttp/httptrace"
+	"github.com/sparkaio/fhttp/httptrace"
 	"net/textproto"
 	"net/url"
 	"os"
@@ -49,7 +49,7 @@ import (
 	"time"
 
 	"golang.org/x/net/http/httpguts"
-	"github.com/robin-samuel/fhttp/http2/hpack"
+	"github.com/sparkaio/fhttp/http2/hpack"
 	"golang.org/x/net/idna"
 )
 

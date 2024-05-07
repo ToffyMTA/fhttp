@@ -18,7 +18,7 @@ import (
 	"strings"
 	"sync"
 
-	http "github.com/robin-samuel/fhttp"
+	http "github.com/sparkaio/fhttp"
 )
 
 // hello world, the web server
