@@ -146,16 +146,13 @@ type RoundTripper interface {
 // refererForURL returns a referer without any authentication info or
 // an empty string if lastReq scheme is https and newReq scheme is http.
 // If the referer was explicitly set, then it will continue to be used.
-func refererForURL(lastReq, newReq *url.URL, explicitRef string) string {
+func refererForURL(lastReq, newReq *url.URL) string {
 	// https://tools.ietf.org/html/rfc7231#section-5.5.2
 	//   "Clients SHOULD NOT include a Referer header field in a
 	//    (non-secure) HTTP request if the referring page was
 	//    transferred with a secure protocol."
 	if lastReq.Scheme == "https" && newReq.Scheme == "http" {
 		return ""
-	}
-	if explicitRef != "" {
-		return explicitRef
 	}
 
 	referer := lastReq.String()
@@ -686,8 +683,10 @@ func (c *Client) do(req *Request) (retres *Response, reterr error) {
 
 			// Add the Referer header from the most recent
 			// request URL to the new one, if it's not https->http:
-			if ref := refererForURL(reqs[len(reqs)-1].URL, req.URL, req.Header.Get("Referer")); ref != "" {
-				req.Header.Set("Referer", ref)
+			if ref := refererForURL(reqs[len(reqs)-1].URL, req.URL); ref != "" {
+				if !req.Header.has("Referer") && !req.Header.has("referer") {
+					req.Header.Set("Referer", ref)
+				}
 			}
 			err = c.checkRedirect(req, reqs)
 
