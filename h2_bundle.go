@@ -9030,9 +9030,8 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 		}
 
 		for _, kv := range kvs {
-			if http2asciiEqualFold(kv.Key, "host") || http2asciiEqualFold(kv.Key, "content-length") {
+			if http2asciiEqualFold(kv.Key, "host") {
 				// Host is :authority, already sent.
-				// Content-Length is automatic, set below.
 				continue
 			} else if http2asciiEqualFold(kv.Key, "connection") ||
 				http2asciiEqualFold(kv.Key, "proxy-connection") ||
