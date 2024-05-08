@@ -702,8 +702,13 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 	if err != nil {
 		return err
 	}
+	err = tw.writeHeader(w, trace)
+	if err != nil {
+		return err
+	}
 
-	if err := tw.addHeaders(&r.Header, trace); err != nil {
+	err = r.Header.writeSubset(w, reqWriteExcludeHeader, trace)
+	if err != nil {
 		return err
 	}
 
