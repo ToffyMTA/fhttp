@@ -22,6 +22,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -2114,6 +2115,9 @@ var errCallerOwnsConn = errors.New("read loop ending; caller owns writable under
 func (pc *persistConn) readLoop() {
 	closeErr := errReadLoopExiting // default value, if not changed below
 	defer func() {
+		if r := recover(); r != nil {
+			closeErr = fmt.Errorf("panic: %v\n%s", r, debug.Stack())
+		}
 		pc.close(closeErr)
 		pc.t.removeIdleConn(pc)
 	}()
@@ -2447,7 +2451,10 @@ func (nwe nothingWrittenError) Unwrap() error {
 }
 
 func (pc *persistConn) writeLoop() {
-	defer close(pc.writeLoopDone)
+	defer func() {
+		recover()
+		close(pc.writeLoopDone)
+	}()
 	for {
 		select {
 		case wr := <-pc.writech:
