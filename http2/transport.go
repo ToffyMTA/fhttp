@@ -186,6 +186,10 @@ type Priority struct {
 	StreamID      uint32
 }
 
+func (t *Transport) GetT1() *http.Transport {
+	return t.t1
+}
+
 func (t *Transport) maxHeaderListSize() uint32 {
 	maxHeaderListSizeIdx := slices.IndexFunc(t.Settings, func(s Setting) bool {
 		return s.ID == SettingMaxHeaderListSize
