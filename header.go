@@ -199,6 +199,8 @@ var headerSorterPool = sync.Pool{
 	New: func() any { return new(headerSorter) },
 }
 
+var lock sync.RWMutex
+
 // sortedKeyValues returns h's keys sorted in the returned kvs
 // slice. The headerSorter used to sort is also returned, for possible
 // return to headerSorterCache.
@@ -209,9 +211,11 @@ func (h Header) SortedKeyValues(exclude map[string]bool) (kvs []HeaderKeyValues,
 	}
 	kvs = hs.kvs[:0]
 	for k, vv := range h {
+		lock.RLock()
 		if !exclude[k] {
 			kvs = append(kvs, HeaderKeyValues{k, vv})
 		}
+		lock.RUnlock()
 	}
 	hs.kvs = kvs
 	sort.Sort(hs)
@@ -228,9 +232,11 @@ func (h Header) SortedKeyValuesBy(order map[string]int, exclude map[string]bool)
 	}
 	kvs = hs.kvs[:0]
 	for k, vv := range h {
+		lock.RLock()
 		if !exclude[k] {
 			kvs = append(kvs, HeaderKeyValues{k, vv})
 		}
+		lock.RUnlock()
 	}
 	hs.kvs = kvs
 	hs.order = order
@@ -262,7 +268,9 @@ func (h Header) writeSubset(w io.Writer, exclude map[string]bool, trace *httptra
 		if exclude == nil {
 			exclude = make(map[string]bool)
 		}
+		lock.Lock()
 		exclude[HeaderOrderKey] = true
+		lock.Unlock()
 		kvs, sorter = h.SortedKeyValuesBy(order, exclude)
 	} else {
 		kvs, sorter = h.SortedKeyValues(exclude)
