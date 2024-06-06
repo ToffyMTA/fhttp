@@ -7,14 +7,12 @@ package http2
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -2187,45 +2185,6 @@ func TestTransportFailsOnInvalidHeadersAndTrailers(t *testing.T) {
 			}
 			res.Body.Close()
 		}
-	}
-}
-
-// Tests that gzipReader doesn't crash on a second Read call following
-// the first Read call's gzip.NewReader returning an error.
-func TestGzipReader_DoubleReadCrash(t *testing.T) {
-	gz := &gzipReader{
-		body: ioutil.NopCloser(strings.NewReader("0123456789")),
-	}
-	var buf [1]byte
-	n, err1 := gz.Read(buf[:])
-	if n != 0 || !strings.Contains(fmt.Sprint(err1), "invalid header") {
-		t.Fatalf("Read = %v, %v; want 0, invalid header", n, err1)
-	}
-	n, err2 := gz.Read(buf[:])
-	if n != 0 || err2 != err1 {
-		t.Fatalf("second Read = %v, %v; want 0, %v", n, err2, err1)
-	}
-}
-
-func TestGzipReader_ReadAfterClose(t *testing.T) {
-	body := bytes.Buffer{}
-	w := gzip.NewWriter(&body)
-	w.Write([]byte("012345679"))
-	w.Close()
-	gz := &gzipReader{
-		body: ioutil.NopCloser(&body),
-	}
-	var buf [1]byte
-	n, err := gz.Read(buf[:])
-	if n != 1 || err != nil {
-		t.Fatalf("first Read = %v, %v; want 1, nil", n, err)
-	}
-	if err := gz.Close(); err != nil {
-		t.Fatalf("gz Close error: %v", err)
-	}
-	n, err = gz.Read(buf[:])
-	if n != 0 || err != fs.ErrClosed {
-		t.Fatalf("Read after close = %v, %v; want 0, fs.ErrClosed", n, err)
 	}
 }
 

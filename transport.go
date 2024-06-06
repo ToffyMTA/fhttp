@@ -11,7 +11,6 @@ package http
 
 import (
 	"bufio"
-	"compress/gzip"
 	"container/list"
 	"context"
 	"errors"
@@ -33,7 +32,6 @@ import (
 	"github.com/sparkaio/fhttp/internal/godebug"
 
 	"github.com/sparkaio/fhttp/httptrace"
-	"github.com/sparkaio/fhttp/internal/ascii"
 
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/http/httpproxy"
@@ -2253,12 +2251,8 @@ func (pc *persistConn) readLoop() {
 		}
 
 		resp.Body = body
-		if rc.addedGzip && ascii.EqualFold(resp.Header.Get("Content-Encoding"), "gzip") {
-			resp.Body = &gzipReader{body: body}
-			resp.Header.Del("Content-Encoding")
-			resp.Header.Del("Content-Length")
-			resp.ContentLength = -1
-			resp.Uncompressed = true
+		if rc.addedGzip {
+			DecompressBody(resp)
 		}
 
 		select {
@@ -2879,41 +2873,6 @@ func (es *bodyEOFSignal) condfn(err error) error {
 	err = es.fn(err)
 	es.fn = nil
 	return err
-}
-
-// gzipReader wraps a response body so it can lazily
-// call gzip.NewReader on the first call to Read
-type gzipReader struct {
-	_    incomparable
-	body *bodyEOFSignal // underlying HTTP/1 response body framing
-	zr   *gzip.Reader   // lazily-initialized gzip reader
-	zerr error          // any error from gzip.NewReader; sticky
-}
-
-func (gz *gzipReader) Read(p []byte) (n int, err error) {
-	if gz.zr == nil {
-		if gz.zerr == nil {
-			gz.zr, gz.zerr = gzip.NewReader(gz.body)
-		}
-		if gz.zerr != nil {
-			return 0, gz.zerr
-		}
-	}
-
-	gz.body.mu.Lock()
-	if gz.body.closed {
-		err = errReadOnClosedResBody
-	}
-	gz.body.mu.Unlock()
-
-	if err != nil {
-		return 0, err
-	}
-	return gz.zr.Read(p)
-}
-
-func (gz *gzipReader) Close() error {
-	return gz.body.Close()
 }
 
 type tlsHandshakeTimeoutError struct{}

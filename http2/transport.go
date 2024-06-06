@@ -9,13 +9,11 @@ package http2
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"math"
 	"math/bits"
@@ -2764,12 +2762,8 @@ func (rl *clientConnReadLoop) handleResponse(cs *clientStream, f *MetaHeadersFra
 	cs.bytesRemain = res.ContentLength
 	res.Body = transportResponseBody{cs}
 
-	if cs.requestedGzip && asciiEqualFold(res.Header.Get("Content-Encoding"), "gzip") {
-		res.Header.Del("Content-Encoding")
-		res.Header.Del("Content-Length")
-		res.ContentLength = -1
-		res.Body = &gzipReader{body: res.Body}
-		res.Uncompressed = true
+	if cs.requestedGzip {
+		http.DecompressBody(res)
 	}
 	return res, nil
 }
@@ -3355,37 +3349,6 @@ type erringRoundTripper struct{ err error }
 
 func (rt erringRoundTripper) RoundTripErr() error                             { return rt.err }
 func (rt erringRoundTripper) RoundTrip(*http.Request) (*http.Response, error) { return nil, rt.err }
-
-// gzipReader wraps a response body so it can lazily
-// call gzip.NewReader on the first call to Read
-type gzipReader struct {
-	_    incomparable
-	body io.ReadCloser // underlying Response.Body
-	zr   *gzip.Reader  // lazily-initialized gzip reader
-	zerr error         // sticky error
-}
-
-func (gz *gzipReader) Read(p []byte) (n int, err error) {
-	if gz.zerr != nil {
-		return 0, gz.zerr
-	}
-	if gz.zr == nil {
-		gz.zr, err = gzip.NewReader(gz.body)
-		if err != nil {
-			gz.zerr = err
-			return 0, err
-		}
-	}
-	return gz.zr.Read(p)
-}
-
-func (gz *gzipReader) Close() error {
-	if err := gz.body.Close(); err != nil {
-		return err
-	}
-	gz.zerr = fs.ErrClosed
-	return nil
-}
 
 type errorReader struct{ err error }
 
