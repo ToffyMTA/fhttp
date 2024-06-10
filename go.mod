@@ -1,4 +1,4 @@
-module github.com/sparkaio/fhttp
+module github.com/ToffyMTA/fhttp
 
 go 1.22.0
 
